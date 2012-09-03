@@ -1,17 +1,18 @@
 package swingCourier.Views;
 
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Stack;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
@@ -20,6 +21,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
@@ -39,24 +41,35 @@ public class BrowserPanel extends JPanel{
 	
 	private void init() {
 		
+		this.setMinimumSize(new Dimension(350,400));
 		        String initialURL = "http://www.java.com/";
 		       backURLs = new Stack<String>();
 		       fwdURLs = new Stack<String>();
 		        JLabel lblURL = new JLabel("URL");
-		        txtURL = new JTextField(initialURL, 30);
+		        txtURL = new JTextField(initialURL, 20);
 		        JButton btnBrowse = new JButton("Browse");
-		        btnBack = new JButton("Back");
+		        btnBack = new JButton("");
+		        btnBack.setToolTipText("Back");
+		        btnBack.setIcon(new ImageIcon("images/arrowLeft.png"));
 		        btnBack.setEnabled(false);
-		        btnFwd = new JButton("Forward");
+		        btnFwd = new JButton("");
+		        btnFwd.setIcon(new ImageIcon("images/arrowRight.png"));
+		        btnFwd.setToolTipText("Forward");
 		        btnFwd.setEnabled(false);
 
-		        JPanel panel = new JPanel();
-		        panel.setLayout(new FlowLayout());
-		        panel.add(btnBack);
-		        panel.add(btnFwd);
-		        panel.add(lblURL);
-		        panel.add(txtURL);
-		        panel.add(btnBrowse);
+		        JToolBar bar = new JToolBar();
+		        bar.setLayout(new BoxLayout(bar, BoxLayout.LINE_AXIS));
+		        bar.add(Box.createRigidArea(new Dimension(15,0)));
+		        bar.add(btnBack);
+		        bar.add(Box.createRigidArea(new Dimension(15,0)));
+		        bar.add(btnFwd);
+		        bar.add(Box.createRigidArea(new Dimension(15,0)));
+		        bar.add(lblURL);
+		        bar.add(Box.createRigidArea(new Dimension(15,0)));
+		        bar.add(txtURL);
+		        bar.add(Box.createRigidArea(new Dimension(15,0)));
+		        bar.add(btnBrowse);
+		        bar.add(Box.createRigidArea(new Dimension(15,0)));
 
 		        try {
 		            ed = new JEditorPane(initialURL);
@@ -100,9 +113,10 @@ public class BrowserPanel extends JPanel{
 		                }
 		            });
 		            JScrollPane sp = new JScrollPane(ed);
+		            sp.setPreferredSize(new Dimension(350, 400));
 		            this.setLayout(new BorderLayout());
 		            
-		            this.add(panel, BorderLayout.PAGE_START);
+		            this.add(bar, BorderLayout.PAGE_START);
 		            this.add(sp, BorderLayout.CENTER);
 
 		            
