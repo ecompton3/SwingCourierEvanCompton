@@ -1,5 +1,7 @@
 package swingCourier.Views;
-
+/**
+ * Panel that holds all computational functions like the browser and address book
+ */
 import java.awt.BorderLayout;
 
 import javax.swing.JPanel;
@@ -12,7 +14,9 @@ public class ComputationalPanel extends JPanel{
 	public ComputationalPanel() {
 		init();
 	}
-	
+	/**
+	 * Initializes and adds all elements and listeners
+	 */
 	private void init() {
 		this.setLayout(new BorderLayout());
 		courierTabs = new JTabbedPane();

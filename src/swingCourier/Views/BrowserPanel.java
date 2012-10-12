@@ -1,5 +1,7 @@
 package swingCourier.Views;
-
+/**
+ * Creates the Browser panel containing the actual browser and browser toolbar
+ */
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -38,7 +40,9 @@ public class BrowserPanel extends JPanel{
 		init();
 		
 	}
-	
+	/**
+	 * Initializes and adds all elements and listeners
+	 */
 	private void init() {
 		
 		this.setMinimumSize(new Dimension(350,400));
@@ -48,13 +52,10 @@ public class BrowserPanel extends JPanel{
 		        JLabel lblURL = new JLabel("URL");
 		        txtURL = new JTextField(initialURL, 20);
 		        JButton btnBrowse = new JButton("Browse");
-		        btnBack = new JButton("");
-		        btnBack.setToolTipText("Back");
-		        btnBack.setIcon(new ImageIcon("images/arrowLeft.png"));
+		        btnBack = new JButton("Back");
+		        
 		        btnBack.setEnabled(false);
-		        btnFwd = new JButton("");
-		        btnFwd.setIcon(new ImageIcon("images/arrowRight.png"));
-		        btnFwd.setToolTipText("Forward");
+		        btnFwd = new JButton("Forward");
 		        btnFwd.setEnabled(false);
 
 		        JToolBar bar = new JToolBar();
@@ -124,7 +125,10 @@ public class BrowserPanel extends JPanel{
 		        	invalidURL();
 		        }
 		    }
-	
+	/**
+	 * Handles the Hyperlink events when links are clicked, updates history and url as needed
+	 * @param e The HyperlinkEvent
+	 */
 	private void linkListener(HyperlinkEvent e) {
 		if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
             JEditorPane pane = (JEditorPane) e.getSource();
@@ -153,6 +157,9 @@ public class BrowserPanel extends JPanel{
         }
 	}
 	
+	/**
+	 * Handles submissions on the URL bar to update the browser
+	 */
 	private void addressListener() {
 		try {
 			 backURLs.push(txtURL.getText());
@@ -164,7 +171,9 @@ public class BrowserPanel extends JPanel{
         	invalidURL();
         }
 	}
-	
+	/**
+	 * Handles when the back button is clicked to go to the correct url
+	 */
 	private void backListener() {
 		try {
     		btnFwd.setEnabled(true);
@@ -180,7 +189,9 @@ public class BrowserPanel extends JPanel{
         	invalidURL();
         }
 	}
-	
+	/**
+	 * Handles when the forward button is clicked to go to the correct url
+	 */
 	private void fwdListener() {
 		try {
     		btnBack.setEnabled(true);
@@ -196,7 +207,9 @@ public class BrowserPanel extends JPanel{
         	invalidURL();
         }
 	}
-	
+	/**
+	 * Presents an error dialog when an invalid url is entered
+	 */
 	private void invalidURL() {
 		backURLs.pop();
 		JFrame frame = (JFrame) SwingUtilities.getRoot(this);

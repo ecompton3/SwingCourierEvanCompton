@@ -1,5 +1,7 @@
 package swingCourier.Views;
-
+/**
+ * Creates the address book
+ */
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 
@@ -21,7 +23,9 @@ public class AddressPanel extends JPanel{
 	public AddressPanel() {
 		init();
 	}
-	
+	/**
+	 * Initializes and adds all elements and listeners
+	 */
 	private void init() {
 		this.setLayout(new BorderLayout());
 		setupTable();		
@@ -34,7 +38,9 @@ public class AddressPanel extends JPanel{
 		this.add(tablePane, BorderLayout.CENTER);
 		this.add(textPane, BorderLayout.PAGE_END);
 	}
-	
+	/**
+	 * Sets a TableModel for the address table and adds a selection Listener
+	 */
 	private void setupTable() {
 		addressModel = new AddressModel();
 		addressTable = new JTable(addressModel);
@@ -50,12 +56,13 @@ public class AddressPanel extends JPanel{
 		 	}
 		});
 	}
-	
 	public void setTableModel(TableModel model) {
 		addressModel = model;
 		setupTable();
 	}
-	
+	/**
+	 * Determines the selected row and displays its text
+	 */
 	public void rowSelectListener() {
 		// Get the data model for this table
 		TableModel model = (TableModel)addressTable.getModel();
