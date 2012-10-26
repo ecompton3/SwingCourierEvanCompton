@@ -1,6 +1,7 @@
 package swingCourier.NotePageComponent;
 
 import java.awt.Color;
+import java.awt.Rectangle;
 import java.util.List;
 
 import javax.swing.event.ChangeListener;
@@ -52,7 +53,7 @@ public interface NotepageModel {
 	/**
 	 * Checks if the current stroke type is Freeform
 	 */
-	public void checkIfFreeform();
+	public boolean checkIfFreeform();
 	/**
 	 * Gets the list of stroke objects
 	 * @return
@@ -123,12 +124,58 @@ public interface NotepageModel {
 	 * @param b
 	 */
 	public void setGestureMode(boolean b);
-	
+	/**
+	 * Checks if user is gesturing
+	 * @return
+	 */
 	public boolean getGestureMode();
-	
-	public void checkGesture(int x, int y);
-	
+	/**
+	 * Determines if a gesture ws drawn
+	 * @return true if a matched gesture was fired, otherwise false
+	 */
+	public boolean checkGesture();
+	/**
+	 * Resets the current stroke to null
+	 */
 	public void resetStroke();
+	/**
+	 * Returns the matched gesture
+	 * @return A String representing the gesture
+	 */
+	public String getGesture();
+	/**
+	 * Deletes objects from the page
+	 */
+	public void deleteObjects();
+	/**
+	 * Turns on the selection mode
+	 * @param b
+	 */
+	public void setSelectMode(boolean b);
+	/**
+	 * Checks if in selection mode
+	 * @return
+	 */
+	public boolean getSelectMode();
+	/**
+	 * Gets the boundries of the selected area
+	 * @return A Rectangle representing the bounds area
+	 */
+	public Rectangle getSelectionBounds();
+	/**
+	 * Puts objects in the selection area in selection mode
+	 */
+	public void selectObjects();
+	/**
+	 * Translates objects based on change in mouse direction
+	 * @param x Change in x direction
+	 * @param y Change in y direction
+	 */
+	public void moveSelection(int x, int y);
+	/**
+	 * Deselects all objects
+	 */
+	public void deselect();
 	
 	
 }

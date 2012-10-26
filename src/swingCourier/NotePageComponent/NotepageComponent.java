@@ -3,6 +3,8 @@ package swingCourier.NotePageComponent;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.JComponent;
 import javax.swing.UIManager;
@@ -16,6 +18,8 @@ import javax.swing.event.ChangeListener;
 public class NotepageComponent extends JComponent implements ChangeListener {
     NotepageModel model;
     int maxWidth = 0, maxHeight = 0;
+    private ActionListener listener;
+    private BasicNotepageUI ui;
     public NotepageComponent() {
     	
         setModel(new BasicNotepageModel());
@@ -32,12 +36,24 @@ public class NotepageComponent extends JComponent implements ChangeListener {
     public NotepageModel getModel() {
         return model;
     }
-    public void setUI(BasicNotepageUI ui) { super.setUI(ui); }
+    public void setUI(BasicNotepageUI ui) { 
+    	this.ui = ui;
+    	super.setUI(ui); 
+    }
+    
+    public BasicNotepageUI getUI() {
+    	return ui;
+    }
+    
     public void updateUI() {
         setUI((BasicNotepageUI) new BasicNotepageUI());
         invalidate();
     }
     public String getUIClassID() { return "BasicNotepageUI"; }
+    
+	public void addActionListener(ActionListener listener) {
+		this.listener = listener;
+	}
     
     @Override
     public void paintComponent(Graphics g) {
@@ -86,6 +102,20 @@ public class NotepageComponent extends JComponent implements ChangeListener {
 		model.setColor(newColor);
 	}
 	
+	public String getGesture() {
+		return model.getGesture();
+	}
+	
+	public void fireGestureEvent() {
+		String gesture = getGesture();
+		if(gesture.equals("Delete")) {
+			model.deleteObjects();
+		} else if(gesture.equals("Select")) {
+			model.selectObjects();
+			model.setSelectMode(true);
+		}
+		listener.actionPerformed(new ActionEvent(this,1,gesture));
+	}
 	
 	
 }

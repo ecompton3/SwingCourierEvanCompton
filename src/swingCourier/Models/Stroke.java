@@ -14,6 +14,7 @@ public class Stroke {
 	private Color color;
 	private String type;
 	private List<Point> points;
+	private boolean selected;
 	
 	public Stroke(int xPos, int yPos, int xEnd, int yEnd, String type, Color color) {
 		this.xPos = xPos;
@@ -23,6 +24,7 @@ public class Stroke {
 		this.type = type;
 		this.color = color;
 		points = new ArrayList<Point>();
+		selected = false;
 	}
 
 	public int getxPos() {
@@ -76,6 +78,14 @@ public class Stroke {
 	
 	public List<Point> getPoints() {
 		return points;
+	}
+	
+	public boolean getSelected() {
+		return selected;
+	}
+
+	public void setSelected(boolean select) {
+		selected = select;
 	}
 	
 }

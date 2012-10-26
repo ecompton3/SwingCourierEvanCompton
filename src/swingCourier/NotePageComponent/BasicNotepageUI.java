@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -35,6 +36,8 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
 	 public static final String UI_CLASS_ID = "BasicNotepageUI";
 	private NotepageComponent page;
 	private Graphics2D g2;
+	private Color prevColor;
+	private int prevX=-1, prevY=-1, flash = 0;
 	
     public static ComponentUI createUI(JComponent c) {
         return new BasicNotepageUI();
@@ -66,7 +69,28 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
     	drawStrokes(g2);
     	g2.setColor(Color.black);
     	drawText(g2);
+    	if(page.getModel().getSelectMode()) {
+    		
+    		drawSelectionBox();
+        	
+    	}
+    	
     }
+    
+    private void drawSelectionBox() {
+    	int xInc, yInc;
+    	Rectangle bounds = page.getModel().getSelectionBounds();
+    	xInc = (int) bounds.getWidth()/8;
+    	yInc = (int) bounds.getHeight()/8;
+    	g2.setColor(Color.green);
+    	g2.draw(bounds);
+    	g2.setColor(Color.white);
+    	for(int i = 1; i < 8; i ++) {    		
+    		g2.drawLine(bounds.x + (xInc * i), bounds.y - 2,bounds.x + (xInc * i) , bounds.y + (int)bounds.getHeight()+2);
+    		g2.drawLine(bounds.x - 2, bounds.y + (yInc * i),bounds.x + (int)bounds.getWidth()+2, bounds.y + (yInc * i) );
+    	}
+    }
+    
     /**
      * Draws the red/white paper background
      * @param g2 The current Graphics 2D instance
@@ -99,16 +123,16 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
     		height = stroke.getyEnd() - stroke.getyPos();
     		if(stroke.getType().equals("Freeform")) {
     			List<Point> points = stroke.getPoints();
-    			for(int j = 0; j < points.size(); j++) {
-    				if(j == 0) {
-    					g2.drawLine(stroke.getxPos(), stroke.getyPos(), points.get(j).getxPos(), points.get(j).getyPos());
-    					System.out.println("Stroke " + i + " Ypos: " + stroke.getyPos());
-    				} else if (j == points.size() - 1) {
-    					g2.drawLine(points.get(j).getxPos(), points.get(j).getyPos(), stroke.getxEnd(), stroke.getyEnd());
-    				} else {
-    					g2.drawLine(points.get(j-1).getxPos(), points.get(j-1).getyPos(), points.get(j).getxPos(), points.get(j).getyPos());
-    				}
-    			}
+    		
+    				for(int j = 0; j < points.size(); j++) {
+        				if (j == points.size() - 1) {
+        					g2.drawLine(points.get(j).getxPos(), points.get(j).getyPos(), stroke.getxEnd(), stroke.getyEnd());
+        				} else if(j > 1){
+        					g2.drawLine(points.get(j-1).getxPos(), points.get(j-1).getyPos(), points.get(j).getxPos(), points.get(j).getyPos());
+        				}
+        			}
+    			
+    			
     		} else if (stroke.getType().equals("Rectangle")) {
     			
     			if(width < 0 && height < 0) {
@@ -142,11 +166,9 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
     			
     			List<Point> points = curStroke.getPoints();
     			for(int i = 0; i < points.size(); i++) {
-    				if(i == 0) {
-    					g2.drawLine(curStroke.getxPos(), curStroke.getyPos(), points.get(i).getxPos(), points.get(i).getyPos());
-    				} else if (i == points.size() - 1) {
+    				if (i == points.size() - 1) {
     					g2.drawLine(points.get(i).getxPos(), points.get(i).getyPos(), curStroke.getxEnd(), curStroke.getyEnd());
-    				} else {
+    				} else if(i > 1){
     					g2.drawLine(points.get(i-1).getxPos(), points.get(i-1).getyPos(), points.get(i).getxPos(), points.get(i).getyPos());
     				}
     			}
@@ -189,6 +211,7 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
     		textToDraw = text.getText();    
     		g2.setColor(text.getColor());
     		Rectangle2D bounds = metric.getStringBounds(text.getText(), g2);
+    		text.setBounds(bounds);
     		if(checkWrap(text.getxPos(), bounds)) {
     			
     			wrapText(text, metric,g2);   			
@@ -268,27 +291,72 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
 	@Override
 	public void mousePressed(MouseEvent e) {
 		if(e.getButton() == MouseEvent.BUTTON1) {
-			page.getModel().setInitialX(e.getX());
-			page.getModel().setInitialY(e.getY());
-			page.getModel().typing(false);
-			page.getModel().addText();
-			page.getModel().setGestureMode(false);
+			if(page.getModel().getSelectMode()) {
+				page.getModel().setGestureMode(false);
+				prevX = e.getX();
+				prevY = e.getY();
+				if(!page.getModel().getSelectionBounds().contains(e.getX(),e.getY())) {
+					page.getModel().setSelectMode(false);
+					page.getModel().deselect();
+				}
+			}
+			else{
+				page.getModel().setInitialX(e.getX());
+				page.getModel().setInitialY(e.getY());
+				page.getModel().setCurrentX(e.getX());
+				page.getModel().setCurrentY(e.getY());
+				page.getModel().checkIfFreeform();
+				page.getModel().typing(false);
+				page.getModel().addText();
+				page.getModel().setGestureMode(false);
+			}
 		} else if(e.getButton() == MouseEvent.BUTTON3) {
+			//-65536 is the RGB int of the color RED
+			if(page.getModel().getColor().getRGB() != -65536) {
+				//System.out.println(page.getModel().getColor().getRGB());
+				prevColor = page.getModel().getColor();
+				page.getModel().setColor(Color.red);	
+			} else {
+				prevColor = page.getModel().getColor();
+				page.getModel().setColor(Color.black);
+			}
 			page.getModel().setInitialX(e.getX());
 			page.getModel().setInitialY(e.getY());
 			page.getModel().typing(false);
 			page.getModel().addText();
-			page.getModel().setGestureMode(true);
+			if(page.getModel().checkIfFreeform()) {
+				page.getModel().setGestureMode(true);
+				
+			} else {
+				page.getModel().setGestureMode(false);
+				page.getModel().setColor(prevColor);
+			}
+			
 		}
 		
 	}
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		if(page.getModel().getSelectMode()) {
+			//if(prevX <= -1 || prevY <= -1){
+				
+		//	} else {
+				
+				
+			//}
+			//prevX = -1;
+			//prevY = -1;
+			return;
+		}
 		if(page.getModel().getGestureMode()) {
-			page.getModel().checkGesture(e.getX(),e.getY());
+			if(page.getModel().checkGesture()) {
+				page.fireGestureEvent();
+			}
 			page.getModel().stillDrawing(false);
 			page.getModel().resetStroke();
+			page.getModel().setColor(prevColor);
 		} else{
+			
 			page.getModel().addStroke(e.getX(),e.getY());
 			page.getModel().stillDrawing(false);
 		}
@@ -307,11 +375,18 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
    
 	@Override
 	public void mouseDragged(MouseEvent e) {
+		if(page.getModel().getSelectMode()) {
+			page.getModel().moveSelection(e.getX() - prevX, e.getY() -prevY);
+			prevX = e.getX();
+			prevY = e.getY();
+		} else {
+			page.getModel().setCurrentX(e.getX());
+			page.getModel().setCurrentY(e.getY());
+			page.getModel().checkIfFreeform();
+			page.getModel().stillDrawing(true);
+		}
 		
-				page.getModel().setCurrentX(e.getX());
-				page.getModel().setCurrentY(e.getY());
-				page.getModel().checkIfFreeform();
-				page.getModel().stillDrawing(true);
+				
 	}
 	
 	@Override

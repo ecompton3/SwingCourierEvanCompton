@@ -21,10 +21,12 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JToolBar;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import swingCourier.NotePageComponent.NotepageComponent;
 
-public class UserPanel extends JPanel{
+public class UserPanel extends JPanel implements ChangeListener{
 
 	private NotepageComponent drawingPanel;
 	private JPanel pages;
@@ -44,6 +46,13 @@ public class UserPanel extends JPanel{
 	public void init() {
 		this.setLayout(new BorderLayout());
 		drawingPanel = new NotepageComponent();
+		drawingPanel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				performGesture(e);
+			}
+		});
 		pageList = new ArrayList<NotepageComponent>();
 		
 		pageList.add(drawingPanel);
@@ -62,16 +71,7 @@ public class UserPanel extends JPanel{
 		btnBack.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				pageList.get(curPage).setVisible(false);
-				resizePages();
-				curPage--;
-				pageList.get(curPage).setVisible(true);
-				if(curPage <= 0) {
-					curPage = 0;
-					btnBack.setEnabled(false);
-				}
-				btnNext.setEnabled(true);
-				StatusPanel.setStatus("Page: " + curPage);
+				backCommand();
 			}			
 		});
 		btnNew    = new JButton("New Page");
@@ -79,7 +79,14 @@ public class UserPanel extends JPanel{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				numPages++;
-				NotepageComponent comp = new NotepageComponent();			
+				NotepageComponent comp = new NotepageComponent();
+				comp.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO Auto-generated method stub
+						performGesture(e);
+					}
+				});			
 				comp.setColor(newColor);
 				pageList.add(comp);
 				resizePages();
@@ -134,16 +141,7 @@ public class UserPanel extends JPanel{
 		btnNext.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				pageList.get(curPage).setVisible(false);
-				resizePages();
-				curPage++;
-				pageList.get(curPage).setVisible(true);
-				if(curPage >= numPages-1) {
-					curPage = numPages-1;
-					btnNext.setEnabled(false);
-				}
-				btnBack.setEnabled(true);
-				StatusPanel.setStatus("Page: " + curPage);
+				nextCommand();
 			}			
 		});
 		
@@ -255,5 +253,61 @@ public class UserPanel extends JPanel{
 		}
 		
 		
+	}
+	
+	public void nextCommand() {
+		if(curPage >= numPages-1) {
+			StatusPanel.setStatus("No Next Page");
+			return;
+		}
+		pageList.get(curPage).setVisible(false);
+		resizePages();
+		curPage++;
+		pageList.get(curPage).setVisible(true);
+		if(curPage >= numPages-1) {
+			curPage = numPages-1;
+			btnNext.setEnabled(false);
+		}
+		btnBack.setEnabled(true);
+		StatusPanel.setStatus("Page: " + curPage);
+	}
+	
+	public void backCommand() {
+		if(curPage <= 0) {
+			StatusPanel.setStatus("On First Page");
+			return;
+		}
+		pageList.get(curPage).setVisible(false);
+		resizePages();
+		curPage--;
+		pageList.get(curPage).setVisible(true);
+		if(curPage <= 0) {
+			curPage = 0;
+			btnBack.setEnabled(false);
+		}
+		btnNext.setEnabled(true);
+		StatusPanel.setStatus("Page: " + curPage);
+	}
+	
+	
+	@Override
+	public void stateChanged(ChangeEvent e) {
+		String gesture = pageList.get(curPage).getGesture();
+		
+	}
+	
+	private void performGesture(ActionEvent e) {
+		// TODO Auto-generated method stub
+		if(e.getActionCommand().equals("Next")) {
+			nextCommand();
+		} else if (e.getActionCommand().equals("Back")) {
+			backCommand();
+		} else if(e.getActionCommand().equals("Delete")){
+			StatusPanel.setStatus("Deleting");
+		} else if(e.getActionCommand().equals("Select")){
+			StatusPanel.setStatus("Selecting");
+		} else if (e.getActionCommand().equals("None")) {
+			StatusPanel.setStatus("Unknown Gesture");
+		}
 	}
 }
