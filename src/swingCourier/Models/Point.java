@@ -35,19 +35,19 @@ public class Point {
 	}
 	
 	public char comparePoint(Point prev) {
-		if((xPos <= prev.getxPos() + 2 && xPos >= prev.getxPos() - 2) && yPos < prev.yPos) {
+		if(xPos == prev.getxPos() && yPos < prev.yPos) {
 			return N;
 		} else if(xPos > prev.getxPos() && yPos < prev.yPos) {
 			return NE;
-		} else if(xPos > prev.getxPos() && (xPos <= prev.getyPos() + 2 && yPos >= prev.getyPos() - 2)) {
+		} else if(xPos > prev.getxPos() && yPos == prev.getyPos()) {
 			return E;
 		} else if(xPos > prev.getxPos() && yPos > prev.yPos) {
 			return SE;
-		} else if((xPos <= prev.getxPos() + 2 && xPos >= prev.getxPos() - 2) && yPos > prev.yPos) {
+		} else if(xPos == prev.getxPos() && yPos > prev.yPos) {
 			return S;
 		} else if(xPos < prev.getxPos() && yPos > prev.yPos) {
 			return SW;
-		} else if(xPos < prev.getxPos() && (xPos <= prev.getyPos() + 2 && yPos >= prev.getyPos() - 2)) {
+		} else if(xPos < prev.getxPos() && yPos == prev.getyPos()) {
 			return W;
 		} else if(xPos < prev.getxPos() && yPos < prev.yPos) {
 			return NW;

@@ -88,6 +88,18 @@ public class NotepageComponent extends JComponent implements ChangeListener {
 		return maxHeight;
 	}
 	
+	public void setScaleFactors(double x, double y) {
+		ui.setScaleFactors(x, y);
+	}
+	
+	public double getXScale() {
+		return ui.getXScale();
+	}
+	
+	public double getYScale() {
+		return ui.getYScale();
+	}
+	
 	public void resized(int width, int height) {
 		if(maxWidth == 0) {
 			maxWidth = width;
@@ -113,6 +125,14 @@ public class NotepageComponent extends JComponent implements ChangeListener {
 		} else if(gesture.equals("Select")) {
 			model.selectObjects();
 			model.setSelectMode(true);
+		} else if(gesture.equals("List")) {
+			model.listifyObjects();
+		} else if(gesture.equals("Up")) {
+			model.moveElementUp();
+		} else if(gesture.equals("Down")) {
+			model.moveElementDown();
+		} else if(gesture.equals("DeleteItem")) {
+			model.deleteListItem();
 		}
 		listener.actionPerformed(new ActionEvent(this,1,gesture));
 	}

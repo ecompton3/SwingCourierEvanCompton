@@ -5,10 +5,15 @@ import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import swingCourier.Models.ListItem;
+import swingCourier.Models.ListObject;
 import swingCourier.Models.Point;
 import swingCourier.Models.Recognizer;
 import swingCourier.Models.Stroke;
@@ -21,6 +26,8 @@ import swingCourier.Models.TextInput;
 public class BasicNotepageModel implements NotepageModel {
 
 	private List<Stroke> strokeList = new ArrayList<Stroke>();
+	
+	private List<ListObject> lists = new ArrayList<ListObject>();
 
 	private List<TextInput> textList = new ArrayList<TextInput>();
 
@@ -33,7 +40,7 @@ public class BasicNotepageModel implements NotepageModel {
 	private Stroke stroke;
 	private Recognizer recognize = new Recognizer();
 	private String gesture;
-	private Rectangle selectionBounds;
+	private Rectangle selectionBounds, listBounds;
 
 	@Override
 	public void removeChangeListener(ChangeListener listener) {
@@ -88,7 +95,7 @@ public class BasicNotepageModel implements NotepageModel {
 				stroke.setxEnd(curX);
 				stroke.setyEnd(curY);
 			} else {
-				stroke = new Stroke(initX, initY, curX, curX, strokeType, curColor);
+				stroke = new Stroke(initX, initY, curX, curY, strokeType, curColor);
 			}
 			
 			return true;
@@ -243,6 +250,7 @@ public class BasicNotepageModel implements NotepageModel {
 	 * @return The rectangle representation of the boundary box
 	 */
 	private Rectangle makeFreeformBoundry(Stroke freeform) {
+		Rectangle bounds;
 		int minX = 999999, maxX = 0, minY = 999999, maxY = 0;
 		List<Point> points = freeform.getPoints();
 		for(int i = 0; i < points.size(); i++) {
@@ -259,7 +267,15 @@ public class BasicNotepageModel implements NotepageModel {
 				maxY = points.get(i).getyPos();
 			}
 		}
-		return new Rectangle(minX,minY,(maxX-minX),(maxY-minY));
+		if(minX == maxX) {
+			maxX++;
+		}
+		if(minY == maxY) {
+			maxY++;
+		}
+		bounds = new Rectangle(minX,minY,(maxX-minX),(maxY-minY));
+		freeform.setBounds(bounds);
+		return bounds;
 	}
 	/**
 	 * Determines what shapes to delete based off some boundary box
@@ -430,5 +446,240 @@ public class BasicNotepageModel implements NotepageModel {
 		}
 	}
 	
+	public void listifyObjects() {
+		findListObjects(makeFreeformBoundry(stroke));
+	}
+	
+	private void findListObjects(Rectangle rect) {
+		Queue<Stroke> listStrokes = new LinkedBlockingQueue<Stroke>();
+		listBounds = makeListBounds(rect);
+		
+		for(int i = 0; i < strokeList.size(); i++) {
+			Stroke curr = strokeList.get(i);
+			if(curr.getType().equals("Freeform")) {
+				Rectangle freeBound = makeFreeformBoundry(curr);
+				if(listBounds.contains(freeBound)) {
+					strokeList.remove(i);
+					listStrokes.add(curr);
+					i--;
+				}
+			} 
+		}
+		if(listStrokes.size() > 0)
+		segmentList(listStrokes);
+		
+	}
+	
+	private void segmentList(Queue<Stroke> strokes) {
+		ListObject list = new ListObject(listBounds);
+		ListItem item = null;
+		while(!strokes.isEmpty()) {
+			if(item == null) {
+				item = new ListItem(strokes.poll());
+			} else {
+				Stroke curStroke = strokes.peek();
+				Rectangle prevBounds = item.getBounds();
+				Rectangle curBounds = curStroke.getBounds();
+				int xBoundLoc = prevBounds.x + prevBounds.width;
+				int yBoundLoc = prevBounds.y + prevBounds.height;
+				
+				if(curBounds.x - xBoundLoc < 50 ) {
+					int width = prevBounds.width + (curBounds.x - xBoundLoc) + curBounds.width;
+					int xLoc = prevBounds.x;
+					if(curBounds.x < xLoc) {
+						xLoc = curBounds.x;
+						if(xLoc + curBounds.width > xBoundLoc) {
+							width = prevBounds.width + ((xLoc + curBounds.width)-xBoundLoc);
+						}
+					}
+					if(curBounds.y < prevBounds.y) {
+						item.addStroke(strokes.poll());						
+						if(curBounds.y + curBounds.height > yBoundLoc) {
+							
+							item.setBounds(new Rectangle(xLoc, curBounds.y, width, curBounds.height) );
+						} else {
+							item.setBounds(new Rectangle(xLoc, curBounds.y, width, 
+									prevBounds.height + (prevBounds.y - curBounds.y)) );
+						}
+					} else if(curBounds.y <= yBoundLoc && curBounds.y >= prevBounds.y) {
+						int yDiff = yBoundLoc - (curBounds.y + curBounds.height);
+						double percentIn = (curBounds.y + yDiff * 1.0)/(curBounds.height);
+						if(percentIn >= 0.8) {
+							item.addStroke(strokes.poll());
+							int curYBoundLoc = curBounds.y + curBounds.height;
+							if(curYBoundLoc > yBoundLoc) {
+								item.setBounds(new Rectangle(xLoc, prevBounds.y, width, 
+										prevBounds.height + (curYBoundLoc - yBoundLoc)) );
+							} else {
+								item.setBounds(new Rectangle(xLoc, prevBounds.y, width, prevBounds.height));
+							}
+						} else {
+							list.add(item);
+							item = null;
+						}
+					} else {
+						list.add(item);
+						item = null;
+					}
+				} else {
+					strokeList.add(strokes.poll());
+					curStroke = strokes.peek();
+					curBounds = curStroke.getBounds();
+					while(curBounds.x  > xBoundLoc) {
+						strokeList.add(strokes.poll());
+						curStroke = strokes.peek();
+						curBounds = curStroke.getBounds();
+					}
+					
+					list.add(item);
+					item = null;
+				}
+				
+			}
+			if(strokes.isEmpty()) {
+				list.add(item);
+			}
+		}		
+		
+		list.normalizeList();
+		lists.add(list);
+	}
+	
+	private Rectangle makeListBounds(Rectangle rect) {
+		int x      = (int) rect.getX(),
+		    y      = (int) rect.getY(),
+		    height = (int) rect.getHeight(),
+		    maxWidth  = (int) rect.getWidth();
+		
+		for(int i = 0; i < strokeList.size(); i++) {
+			Stroke curr = strokeList.get(i);
+			if(curr.getType().equals("Freeform")) {
+				Rectangle freeBound = makeFreeformBoundry(curr);
+				if(freeBound.getY() > y && freeBound.getY() + freeBound.getHeight() < y + height &&
+						freeBound.getX() > x && freeBound.getX() + freeBound.getWidth() > 
+						x + maxWidth) {
+					maxWidth = (int) (x + freeBound.getX() + freeBound.getWidth());
+				}
+			} 
+		}
+		
+		return new Rectangle(x,y,maxWidth,height);
+	}
+
+	@Override
+	public List<ListObject> getLists() {
+		// TODO Auto-generated method stub
+		return lists;
+	}
+
+	@Override
+	public void moveElementUp() {
+		Rectangle bounds = makeFreeformBoundry(stroke);
+		ListObject list = null;
+		int index = -1, listIndex = -1;
+		for(int i = 0; i < lists.size(); i++) {
+			if(lists.get(i).getBounds().contains(bounds)) {
+				list = lists.get(i);
+				listIndex = i;
+			}
+		}
+		if(list == null) {
+			return;
+		} else {
+			for(int j = 0; j < list.getItems().size(); j++) {
+				if(list.getItems().get(j).getBounds().contains(bounds)) {
+					index = j;
+				}
+			}
+		}
+		if(index == -1 || index == 0) {
+			return;
+		} else {
+			List temp = list.getItems().get(index - 1).getStrokes();
+			List temp2 = list.getItems().get(index).getStrokes();
+			list.getItems().get(index).setStrokes(temp);
+			list.getItems().get(index-1).setStrokes(temp2);
+			list.adjustItemStrokes(index, index-1);
+			
+		}
+		list.normalizeList();
+		lists.set(listIndex, list);
+	}
+
+	@Override
+	public void moveElementDown() {
+		Rectangle bounds = makeFreeformBoundry(stroke);
+		ListObject list = null;
+		int index = -1, listIndex = -1;
+		for(int i = 0; i < lists.size(); i++) {
+			if(lists.get(i).getBounds().contains(bounds)) {
+				list = lists.get(i);
+				listIndex = i;
+			}
+		}
+		if(list == null) {
+			return;
+		} else {
+			for(int j = 0; j < list.getItems().size(); j++) {
+				if(list.getItems().get(j).getBounds().contains(bounds)) {
+					index = j;
+				}
+			}
+		}
+		if(index == -1 || index == list.getItems().size() - 1) {
+			return;
+		} else {
+			List temp = list.getItems().get(index + 1).getStrokes();
+			List temp2 = list.getItems().get(index).getStrokes();
+			list.getItems().get(index).setStrokes(temp);
+			list.getItems().get(index+1).setStrokes(temp2);
+			list.adjustItemStrokes(index+1, index);
+			
+		}
+		list.normalizeList();
+		lists.set(listIndex, list);
+		
+	}
+
+	@Override
+	public void deleteListItem() {
+		Rectangle bounds = makeFreeformBoundry(stroke);
+		ListObject list = null;
+		int index = -1, listIndex = -1;
+		for(int i = 0; i < lists.size(); i++) {
+			if(lists.get(i).getBounds().contains(bounds)) {
+				list = lists.get(i);
+				listIndex = i;
+			}
+		}
+		if(list == null) {
+			return;
+		} else {
+			for(int j = 0; j < list.getItems().size(); j++) {
+				if(list.getItems().get(j).getBounds().contains(bounds)) {
+					index = j;
+				}
+			}
+		}
+		if(index == -1) {
+			return;
+		} else {
+			/*List temp = list.getItems().get(index + 1).getStrokes();
+			List temp2 = list.getItems().get(index).getStrokes();
+			list.getItems().get(index).setStrokes(temp);
+			list.getItems().get(index+1).setStrokes(temp2);
+			list.adjustItemStrokes(index+1, index);*/
+			list.getItems().remove(index);
+			
+		}
+		if(list.getItems().size() > 0) {
+			list.normalizeList();
+			lists.set(listIndex, list);
+		} else {
+			lists.remove(listIndex);
+		}
+		
+		
+	}
 
 }

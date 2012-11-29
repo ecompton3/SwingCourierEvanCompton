@@ -29,14 +29,14 @@ import swingCourier.NotePageComponent.NotepageComponent;
 public class UserPanel extends JPanel implements ChangeListener{
 
 	private NotepageComponent drawingPanel;
-	private JPanel pages;
+	private PageContainer pages;
 	private JToolBar toolBar;
-	private JButton btnBack, btnNew, btnDelete, btnNext,btnColor;
+	private JButton btnBack, btnNew, btnDelete, btnNext,btnColor,btnOverview;
 	private JRadioButton freeFormRadio, rectangleRadio, ovalRadio;
 	private ButtonGroup drawingGroup;
-	private int numPages = 1, curPage = 0;
-	private List<NotepageComponent> pageList;
-	private Color newColor = new Color(0, 0, 0);
+	private JScrollPane pane;
+	
+	
 	public UserPanel() {
 		init();
 	}
@@ -53,15 +53,15 @@ public class UserPanel extends JPanel implements ChangeListener{
 				performGesture(e);
 			}
 		});
-		pageList = new ArrayList<NotepageComponent>();
+		List<NotepageComponent> pageList = new ArrayList<NotepageComponent>();
 		
 		pageList.add(drawingPanel);
 		
-		pages = new JPanel();
-		JScrollPane scroll = new JScrollPane(pages);
-		this.add(scroll, BorderLayout.CENTER);
-		pages.setLayout(new BorderLayout());
-		pages.add(drawingPanel, BorderLayout.CENTER);
+		pages = new PageContainer(pageList);
+		pane = new JScrollPane(pages);
+		//this.add(scroll, BorderLayout.CENTER);
+		this.add(pane, BorderLayout.CENTER);
+		pages.add(drawingPanel);
 		
 		toolBar = new JToolBar();
 		
@@ -78,7 +78,7 @@ public class UserPanel extends JPanel implements ChangeListener{
 		btnNew.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				numPages++;
+				
 				NotepageComponent comp = new NotepageComponent();
 				comp.addActionListener(new ActionListener() {
 					@Override
@@ -87,17 +87,11 @@ public class UserPanel extends JPanel implements ChangeListener{
 						performGesture(e);
 					}
 				});			
-				comp.setColor(newColor);
-				pageList.add(comp);
-				resizePages();
-				pages.add(comp, BorderLayout.CENTER);
-				pageList.get(curPage).setVisible(false);
-				curPage = numPages-1;
-				pageList.get(curPage).setVisible(true);
+				pages.newPage(comp);
 				btnNext.setEnabled(false);
 				btnBack.setEnabled(true);
 				btnDelete.setEnabled(true);
-				StatusPanel.setStatus("Page: " + curPage);
+				StatusPanel.setStatus("Page: " + pages.getCurPage());
 				
 			}			
 		});
@@ -106,34 +100,24 @@ public class UserPanel extends JPanel implements ChangeListener{
 		btnDelete.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				numPages--;
-				pages.remove(pageList.remove(curPage));
 				
-				if(curPage != 0) {
-					curPage--;
-					pageList.get(curPage).setVisible(true);
-				} else {
-					curPage = 0;
-					pageList.get(curPage).setVisible(true);
-					
-				}
-				
-				if(curPage <= 0) {
-					curPage = 0;
+				pages.deletePage();
+				if(pages.getCurPage() <= 0) {
+					pages.setCurPage(0);
 					btnBack.setEnabled(false);
 					btnNext.setEnabled(true);
-				} else if (curPage >= numPages-1) {
-					curPage = numPages - 1;
+				} else if (pages.getCurPage() >= pages.getNumPages()-1) {
+					pages.setCurPage(pages.getNumPages() - 1);
 					btnNext.setEnabled(false);
 					btnBack.setEnabled(true);
 				}
 				
-				if(numPages <= 1) {
+				if(pages.getNumPages() <= 1) {
 					btnDelete.setEnabled(false);
 					btnBack.setEnabled(false);
 					btnNext.setEnabled(false);
 				}
-				StatusPanel.setStatus("Page: " + curPage);
+				StatusPanel.setStatus("Page: " + pages.getCurPage());
 			}			
 		});
 		btnNext   = new JButton("Next");
@@ -145,18 +129,26 @@ public class UserPanel extends JPanel implements ChangeListener{
 			}			
 		});
 		
+		btnOverview   = new JButton("Overview");
+		btnOverview.setEnabled(true);
+		btnOverview.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				overviewCommand();
+			}			
+		});
+		
 		btnColor = new JButton("Color");
 		btnColor.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				newColor = JColorChooser.showDialog(
+				Color newColor = Color.black;
+				 newColor = JColorChooser.showDialog(
 	                    UserPanel.this,
 	                     "Choose Background Color",
 	                     newColor);
-				for(int i = 0; i <pageList.size(); i++) {
-					pageList.get(i).setColor(newColor);
-				}
+				pages.changeColor(newColor);
 				btnColor.setBackground(newColor);
 				
 			}
@@ -205,6 +197,8 @@ public class UserPanel extends JPanel implements ChangeListener{
 		toolBar.add(btnDelete);
 		toolBar.add(Box.createHorizontalGlue());
 		toolBar.add(btnNext);
+		toolBar.add(Box.createHorizontalGlue());
+		toolBar.add(btnOverview);
 		
 		toolBar.add(Box.createHorizontalGlue());
 		toolBar.add(Box.createHorizontalGlue());
@@ -229,70 +223,43 @@ public class UserPanel extends JPanel implements ChangeListener{
 	public void changeStrokeType(String text) {
 		NotepageComponent.setStrokeType(text);
 	}
-	/**
-	 * Resizes all pages to be the maximum page size generated
-	 */
-	public void resizePages() {
-		int width = 0, height = 0;
-		for(int i = 0; i < pageList.size(); i++) {
-			if(width < pageList.get(i).getMaxWidth()) {
-				width = pageList.get(i).getMaxWidth();
-			}
-			if(height < pageList.get(i).getMaxHeight()) {
-				height = pageList.get(i).getMaxHeight();
-			}
-		}
-		Dimension d = new Dimension(width,height);
-		for(int j = 0; j < pageList.size(); j++) {
-			pageList.get(j).setMinimumSize(new Dimension(d));
-			pageList.get(j).setPreferredSize(new Dimension(d));
-			pageList.get(j).setMaximumSize(new Dimension(9999999,9999999));
-			pageList.get(j).setSize(new Dimension(d));
-			pageList.get(j).resized(pages.getWidth(),pages.getHeight());
-			pageList.get(j).repaint();
-		}
-		
-		
-	}
+	
 	
 	public void nextCommand() {
-		if(curPage >= numPages-1) {
-			StatusPanel.setStatus("No Next Page");
-			return;
-		}
-		pageList.get(curPage).setVisible(false);
-		resizePages();
-		curPage++;
-		pageList.get(curPage).setVisible(true);
-		if(curPage >= numPages-1) {
-			curPage = numPages-1;
+		pages.nextPage();
+		if(pages.getCurPage() >= pages.getNumPages()-1) {
+			pages.setCurPage(pages.getNumPages()-1);
 			btnNext.setEnabled(false);
 		}
 		btnBack.setEnabled(true);
-		StatusPanel.setStatus("Page: " + curPage);
+		StatusPanel.setStatus("Page: " + pages.getCurPage());
 	}
 	
 	public void backCommand() {
-		if(curPage <= 0) {
-			StatusPanel.setStatus("On First Page");
-			return;
-		}
-		pageList.get(curPage).setVisible(false);
-		resizePages();
-		curPage--;
-		pageList.get(curPage).setVisible(true);
-		if(curPage <= 0) {
-			curPage = 0;
+		pages.prevPage();
+		if(pages.getCurPage() <= 0) {
+			pages.setCurPage(0);
 			btnBack.setEnabled(false);
 		}
 		btnNext.setEnabled(true);
-		StatusPanel.setStatus("Page: " + curPage);
+		StatusPanel.setStatus("Page: " + pages.getCurPage());
+	}
+	
+	public void overviewCommand() {
+		if(pages.getOverview()) {
+			pages.setOverview(false);
+		} else {
+			pages.setOverview(true);
+		}
+		
+		pages.repaint();
+		//btnOverview.setEnabled(false);
 	}
 	
 	
 	@Override
 	public void stateChanged(ChangeEvent e) {
-		String gesture = pageList.get(curPage).getGesture();
+		String gesture = pages.getPageList().get(pages.getCurPage()).getGesture();
 		
 	}
 	
@@ -308,6 +275,8 @@ public class UserPanel extends JPanel implements ChangeListener{
 			StatusPanel.setStatus("Selecting");
 		} else if (e.getActionCommand().equals("None")) {
 			StatusPanel.setStatus("Unknown Gesture");
+		} else if (e.getActionCommand().equals("List")) {
+			StatusPanel.setStatus("List Created");
 		}
 	}
 }

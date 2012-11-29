@@ -24,6 +24,8 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.ComponentUI;
 
+import swingCourier.Models.ListItem;
+import swingCourier.Models.ListObject;
 import swingCourier.Models.Point;
 import swingCourier.Models.Stroke;
 import swingCourier.Models.TextInput;
@@ -38,6 +40,7 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
 	private Graphics2D g2;
 	private Color prevColor;
 	private int prevX=-1, prevY=-1, flash = 0;
+	private double xScale = 1, yScale = 1;
 	
     public static ComponentUI createUI(JComponent c) {
         return new BasicNotepageUI();
@@ -64,6 +67,7 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
         // do painting for the component here!
     	g2 = (Graphics2D) g;
     	g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    	g2.scale(xScale, yScale);
     	drawBackground(g2);
     	
     	drawStrokes(g2);
@@ -75,6 +79,11 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
         	
     	}
     	
+    }
+    
+    public void setScaleFactors(double x, double y) {
+    	xScale = x;
+    	yScale = y;
     }
     
     private void drawSelectionBox() {
@@ -114,6 +123,7 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
      */
     public void drawStrokes(Graphics2D g2) {
     	List<Stroke> strokes = page.getModel().getStrokeList();
+    	List<ListObject> lists = page.getModel().getLists();
     	int width;
 		int height;
     	for(int i = 0; i < strokes.size(); i++) {
@@ -156,6 +166,16 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
     			}
     		}
     	}
+    	
+    	for(int i = 0; i <lists.size();i++) {
+    		ListObject list = lists.get(i);
+    		for(int j = 0; j< list.getItems().size(); j++) {
+    			ListItem item = list.getItems().get(j);
+    			item.drawStroke(g2);
+    		}
+    		
+    	}
+    	
     	Stroke curStroke = page.getModel().getCurrentStroke();
     	
     	if(curStroke != null) {
@@ -322,6 +342,8 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
 			}
 			page.getModel().setInitialX(e.getX());
 			page.getModel().setInitialY(e.getY());
+			page.getModel().setCurrentX(e.getX());
+			page.getModel().setCurrentY(e.getY());
 			page.getModel().typing(false);
 			page.getModel().addText();
 			if(page.getModel().checkIfFreeform()) {
@@ -410,6 +432,14 @@ public class BasicNotepageUI extends NotepageUI implements MouseListener, MouseM
 	public void keyReleased(KeyEvent e) {
 		// TODO Auto-generated method stub
 		
+	}
+	public double getXScale() {
+		// TODO Auto-generated method stub
+		return xScale;
+	}
+	public double getYScale() {
+		// TODO Auto-generated method stub
+		return yScale;
 	}
 	
 }

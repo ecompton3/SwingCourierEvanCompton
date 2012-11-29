@@ -1,6 +1,7 @@
 package swingCourier.Models;
 
 import java.awt.Color;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -15,7 +16,10 @@ public class Stroke {
 	private String type;
 	private List<Point> points;
 	private boolean selected;
+	private Rectangle bounds;
 	
+	
+
 	public Stroke(int xPos, int yPos, int xEnd, int yEnd, String type, Color color) {
 		this.xPos = xPos;
 		this.yPos = yPos;
@@ -25,6 +29,14 @@ public class Stroke {
 		this.color = color;
 		points = new ArrayList<Point>();
 		selected = false;
+	}
+	
+	public Rectangle getBounds() {
+		return bounds;
+	}
+
+	public void setBounds(Rectangle bounds) {
+		this.bounds = bounds;
 	}
 
 	public int getxPos() {

@@ -6,6 +6,7 @@ import java.util.List;
 
 import javax.swing.event.ChangeListener;
 
+import swingCourier.Models.ListObject;
 import swingCourier.Models.Stroke;
 import swingCourier.Models.TextInput;
 /**
@@ -177,5 +178,11 @@ public interface NotepageModel {
 	 */
 	public void deselect();
 	
+	public void listifyObjects();
+	
+	public List<ListObject> getLists();
+	public void moveElementUp();
+	public void moveElementDown();
+	public void deleteListItem();
 	
 }
